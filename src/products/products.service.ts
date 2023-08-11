@@ -3,7 +3,7 @@ import { CreateProductDto, TCreateProductData } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { PriceEntry, Product } from './entities/product.entity';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { asyncHandler } from 'src/utils/helpers';
 
 @Injectable()
@@ -12,7 +12,7 @@ export class ProductsService {
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
   ) {}
 
-  async create(createProductDto: TCreateProductData) {
+  async create(createProductDto: TCreateProductData, session?: ClientSession) {
     const price_entry: PriceEntry = {
       unit_count: createProductDto.stock || 1,
       units_sold: 0,
@@ -22,17 +22,22 @@ export class ProductsService {
     };
 
     const [createError, product] = await asyncHandler(
-      this.productModel.create({
-        ...createProductDto,
-        buy_prices: [price_entry],
-        buy_price: price_entry.amount,
-        sell_price_cash: this.numberToSafeAmount(
-          createProductDto.sell_price_cash,
-        ),
-        sell_price_credit: this.numberToSafeAmount(
-          createProductDto.sell_price_credit,
-        ),
-      }),
+      this.productModel.create(
+        [
+          {
+            ...createProductDto,
+            buy_prices: [price_entry],
+            buy_price: price_entry.amount,
+            sell_price_cash: this.numberToSafeAmount(
+              createProductDto.sell_price_cash,
+            ),
+            sell_price_credit: this.numberToSafeAmount(
+              createProductDto.sell_price_credit,
+            ),
+          },
+        ],
+        { session },
+      ),
     );
 
     if (createError) throw createError;
