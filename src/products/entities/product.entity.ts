@@ -1,5 +1,15 @@
-import { Prop, Schema } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 
+export type TPriceEntry = {
+  unit_count: number;
+  units_sold: number;
+  amount: number;
+  registeredBy: string;
+  registeredOn: Date;
+};
+
+@Schema()
 export class PriceEntry {
   @Prop()
   unit_count: number;
@@ -17,12 +27,15 @@ export class PriceEntry {
   registeredOn: Date;
 }
 
-export const ProductUses = {
+const PriceEntrySchema = SchemaFactory.createForClass(PriceEntry);
+
+export const ProductUses: { VENTA: 'sale'; INSUMO: 'supply' } = {
   VENTA: 'sale',
-  INSUMO: 'supplies',
+  INSUMO: 'supply',
 };
 
-export type ProductUse = keyof typeof ProductUses;
+export type ProductUse = (typeof ProductUses)[keyof typeof ProductUses];
+export type ProductDocument = HydratedDocument<Product>;
 
 @Schema()
 export class Product {
@@ -41,11 +54,14 @@ export class Product {
   // @Prop({ type: Schema.Types.ObjectId, ref: 'Supplier' })
   // supplier: Supplier;
 
-  @Prop({ type: String, enum: ['sale', 'supplies'] })
+  @Prop({ type: String, enum: ['sale', 'supply'] })
   use: ProductUse;
 
-  @Prop({ default: [], type: [PriceEntry] })
+  @Prop({ default: [], type: [PriceEntrySchema] })
   buy_prices: PriceEntry[];
+
+  @Prop()
+  buy_price: number;
 
   @Prop({})
   sell_price_cash: number;
@@ -63,7 +79,7 @@ export class Product {
   stock: number;
 
   @Prop({ default: true })
-  financed: boolean;
+  credit_available: boolean;
 
   @Prop({ default: true })
   enabled: boolean;
@@ -79,3 +95,5 @@ export class Product {
   @Prop()
   added_by: string; */
 }
+
+export const ProductSchema = SchemaFactory.createForClass(Product);
