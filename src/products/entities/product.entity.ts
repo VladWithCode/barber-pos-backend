@@ -1,33 +1,25 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
-export type TPriceEntry = {
-  unit_count: number;
-  units_sold: number;
-  amount: number;
-  registeredBy: string;
-  registeredOn: Date;
-};
-
 @Schema()
-export class PriceEntry {
-  @Prop()
-  unit_count: number;
+export class StockEntry {
+  @Prop({ enum: ['sale', 'supply'] })
+  use: ProductUse;
 
   @Prop()
+  buy_price: number;
+
+  @Prop({ default: 1 })
+  units_available: number;
+
+  @Prop({ default: 0 })
   units_sold: number;
 
-  @Prop()
-  amount: number;
-
-  @Prop()
-  registeredBy: string;
-
-  @Prop()
-  registeredOn: Date;
+  @Prop({ default: Date })
+  date_registered: Date;
 }
 
-const PriceEntrySchema = SchemaFactory.createForClass(PriceEntry);
+const StockEntrySchema = SchemaFactory.createForClass(StockEntry);
 
 export const ProductUses: { VENTA: 'sale'; INSUMO: 'supply' } = {
   VENTA: 'sale',
@@ -39,7 +31,7 @@ export type ProductDocument = HydratedDocument<Product>;
 
 @Schema()
 export class Product {
-  @Prop({ required: true, text: true })
+  @Prop({ required: true, text: true, unique: true })
   name: string;
 
   @Prop({ type: String, index: true })
@@ -51,17 +43,8 @@ export class Product {
   @Prop({ type: String })
   category: string;
 
-  // @Prop({ type: Schema.Types.ObjectId, ref: 'Supplier' })
-  // supplier: Supplier;
-
-  @Prop({ type: String, enum: ['sale', 'supply'] })
-  use: ProductUse;
-
-  @Prop({ default: [], type: [PriceEntrySchema] })
-  buy_prices: PriceEntry[];
-
-  @Prop()
-  buy_price: number;
+  @Prop({ type: [StockEntrySchema], default: [] })
+  stocks: StockEntry[];
 
   @Prop({})
   sell_price_cash: number;
@@ -75,9 +58,6 @@ export class Product {
   @Prop({ type: [String] })
   pictures: string[];
 
-  @Prop({ default: 1 })
-  stock: number;
-
   @Prop({ default: true })
   credit_available: boolean;
 
@@ -87,6 +67,9 @@ export class Product {
   /*   // Props tentativas
   @Prop()
   last_sold: Date;
+
+  // @Prop({ type: Schema.Types.ObjectId, ref: 'Supplier' })
+  // supplier: Supplier;
 
   @Prop()
   last_restock: Date;

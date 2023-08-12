@@ -1,12 +1,13 @@
 import {
   IsArray,
+  IsBoolean,
+  IsDateString,
   IsNumber,
   IsOptional,
+  IsPositive,
   IsString,
-  Min,
   MinLength,
 } from 'class-validator';
-import { ProductUse } from '../entities/product.entity';
 
 export class CreateProductDto {
   @IsString()
@@ -21,35 +22,48 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
-  @IsOptional()
+  @IsString()
   category?: string;
   // use: ProductUse;
 
   @IsNumber()
-  @Min(1)
+  @IsPositive()
   buy_price: number;
 
   @IsOptional()
   @IsNumber()
+  @IsPositive()
   sell_price_cash: number;
 
   @IsOptional()
   @IsNumber()
+  @IsPositive()
   sell_price_credit: number;
 
   @IsNumber()
+  sale_units: number;
+
+  @IsNumber()
+  supply_units: number;
+
+  @IsOptional()
+  @IsNumber()
   thumb?: number;
 
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   pictures?: string[];
-  stock?: number;
-  credit_available?: boolean;
-  enabled?: boolean;
-  amount_sale?: number;
-  amount_supply?: number;
-}
 
-export type TCreateProductData = CreateProductDto & {
-  use: ProductUse;
-};
+  @IsOptional()
+  @IsBoolean()
+  credit_available?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  register_date: Date;
+}
