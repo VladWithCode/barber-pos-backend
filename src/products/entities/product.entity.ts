@@ -34,13 +34,13 @@ export class Product {
   @Prop({ required: true, text: true, unique: true })
   name: string;
 
-  @Prop({ type: String, index: true })
+  @Prop({ index: true })
   barcode: string;
 
   @Prop({ maxlength: 180 })
   description: string;
 
-  @Prop({ type: String })
+  @Prop()
   category: string;
 
   @Prop({ type: [StockEntrySchema], default: [] })
@@ -52,8 +52,8 @@ export class Product {
   @Prop({})
   sell_price_credit: number;
 
-  @Prop({ type: Number, default: 0 })
-  thumb: number;
+  @Prop({ default: 0 })
+  thumb: string;
 
   @Prop({ type: [String] })
   pictures: string[];

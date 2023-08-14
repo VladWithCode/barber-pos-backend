@@ -4,7 +4,6 @@ import {
   IsDateString,
   IsNumber,
   IsOptional,
-  IsPositive,
   IsString,
   MinLength,
 } from 'class-validator';
@@ -27,17 +26,12 @@ export class CreateProductDto {
   // use: ProductUse;
 
   @IsNumber()
-  @IsPositive()
   buy_price: number;
 
-  @IsOptional()
   @IsNumber()
-  @IsPositive()
   sell_price_cash: number;
 
-  @IsOptional()
   @IsNumber()
-  @IsPositive()
   sell_price_credit: number;
 
   @IsNumber()
