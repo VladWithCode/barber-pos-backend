@@ -8,6 +8,7 @@ import {
   Delete,
   UseInterceptors,
   UploadedFiles,
+  Put,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -47,6 +48,13 @@ export class ProductsController {
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productsService.update(id, updateProductDto);
   }
+
+  @Put(':id/pictures')
+  @UseInterceptors(FilesInterceptor('pictures'))
+  async updatePictures(
+    @Param('id') id: string,
+    @UploadedFiles(SharpPipe) pictures: Buffer[],
+  ) {}
 
   @Delete(':id')
   remove(@Param('id') id: string) {

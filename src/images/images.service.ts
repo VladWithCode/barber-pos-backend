@@ -26,7 +26,7 @@ export class ImageService {
         : path.join(process.cwd(), 'public/images');
 
     const writePromises = files.map((f) => {
-      return writeFile(path.join(writePath, f.filename), f.buffer);
+      return writeFile(path.join(writePath, f.filename + '.webp'), f.buffer);
     });
 
     await Promise.allSettled(writePromises);

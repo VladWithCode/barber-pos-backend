@@ -37,7 +37,7 @@ export class Product {
   @Prop({ index: true })
   barcode: string;
 
-  @Prop({ maxlength: 180 })
+  @Prop({ maxlength: 300 })
   description: string;
 
   @Prop()

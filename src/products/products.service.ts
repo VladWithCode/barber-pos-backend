@@ -16,7 +16,6 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto) {
-    console.log(createProductDto);
     const registedDate = createProductDto.register_date || new Date();
     const product = new this.productModel({
       ...createProductDto,
@@ -65,7 +64,7 @@ export class ProductsService {
       this.imagesService.writeFiles(
         pictures.map((pic, i) => {
           const filename = productSlug + '-' + i;
-          filePaths.push('/images/' + filename);
+          filePaths.push('/images/' + filename + '.webp');
 
           return {
             filename,
@@ -93,7 +92,7 @@ export class ProductsService {
   }
 
   async findAll() {
-    const products = await this.productModel.find();
+    const products = await this.productModel.find().lean();
 
     return products;
   }
@@ -115,6 +114,43 @@ export class ProductsService {
 
   async updatePictures(id: string, pictures: Buffer[]) {
     const product = await this.productModel.findById(id);
+    const pictureFilePath = path.join(process.cwd(), 'public/images');
+    const productSlug = product.name
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .join('-');
+    const filePaths: string[] = [];
+
+    const [writeError] = await asyncHandler(
+      this.imagesService.writeFiles(
+        pictures.map((pic, i) => {
+          const filename = productSlug + '-' + i;
+          filePaths.push('/images/' + filename + '.webp');
+
+          return {
+            filename,
+            buffer: pic,
+          };
+        }),
+        { writePath: pictureFilePath },
+      ),
+    );
+
+    if (writeError) {
+      console.error(writeError);
+      throw new HttpException(
+        { message: 'Error al guardar imagenes.' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    product.thumb = filePaths[0];
+    product.pictures = filePaths;
+
+    await product.save();
+
+    return product;
   }
 
   remove(id: string) {
