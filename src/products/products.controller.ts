@@ -6,10 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { SharpPipe } from 'src/images/pipes/sharp-pipe/sharp-pipe.pipe';
 
 @Controller('products')
 export class ProductsController {
@@ -18,6 +22,15 @@ export class ProductsController {
   @Post()
   async create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
+  }
+
+  @Post(':id/pictures')
+  @UseInterceptors(FilesInterceptor('pictures'))
+  async uploadPictures(
+    @Param('id') id: string,
+    @UploadedFiles(SharpPipe) pictures: Buffer[],
+  ) {
+    return this.productsService.uploadPictures(id, pictures);
   }
 
   @Get()
