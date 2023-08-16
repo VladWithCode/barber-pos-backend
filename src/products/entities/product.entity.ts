@@ -46,17 +46,14 @@ export class Product {
   @Prop({ type: [StockEntrySchema], default: [] })
   stocks: StockEntry[];
 
-  @Prop({})
+  @Prop()
   sell_price_cash: number;
 
-  @Prop({})
+  @Prop()
   sell_price_credit: number;
 
-  @Prop({ default: 0 })
-  thumb: string;
-
-  @Prop({ type: [String] })
-  pictures: string[];
+  @Prop()
+  picture: string;
 
   @Prop({ default: true })
   credit_available: boolean;

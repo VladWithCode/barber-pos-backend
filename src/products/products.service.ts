@@ -50,29 +50,19 @@ export class ProductsService {
     return savedProduct;
   }
 
-  async uploadPictures(id: string, pictures: Buffer[]) {
+  async uploadPictures(id: string, picture: Buffer) {
     const product = await this.productModel.findById(id);
-    const pictureFilePath = path.join(process.cwd(), 'public/images');
     const productSlug = product.name
       .toLowerCase()
       .split(' ')
       .filter(Boolean)
       .join('-');
-    const filePaths: string[] = [];
 
     const [writeError] = await asyncHandler(
-      this.imagesService.writeFiles(
-        pictures.map((pic, i) => {
-          const filename = productSlug + '-' + i;
-          filePaths.push('/images/' + filename + '.webp');
-
-          return {
-            filename,
-            buffer: pic,
-          };
-        }),
-        { writePath: pictureFilePath },
-      ),
+      this.imagesService.writeFile({
+        filename: productSlug + '.webp',
+        buffer: picture,
+      }),
     );
 
     if (writeError) {
@@ -83,8 +73,7 @@ export class ProductsService {
       );
     }
 
-    product.thumb = filePaths[0];
-    product.pictures = filePaths;
+    product.picture = '/images/' + productSlug + '.webp';
 
     await product.save();
 
@@ -120,33 +109,6 @@ export class ProductsService {
       .split(' ')
       .filter(Boolean)
       .join('-');
-    const filePaths: string[] = [];
-
-    const [writeError] = await asyncHandler(
-      this.imagesService.writeFiles(
-        pictures.map((pic, i) => {
-          const filename = productSlug + '-' + i;
-          filePaths.push('/images/' + filename + '.webp');
-
-          return {
-            filename,
-            buffer: pic,
-          };
-        }),
-        { writePath: pictureFilePath },
-      ),
-    );
-
-    if (writeError) {
-      console.error(writeError);
-      throw new HttpException(
-        { message: 'Error al guardar imagenes.' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    product.thumb = filePaths[0];
-    product.pictures = filePaths;
 
     await product.save();
 

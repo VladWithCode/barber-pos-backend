@@ -16,19 +16,14 @@ export class WritableFile {
 export class ImageService {
   constructor() {}
 
-  async writeFiles(
-    files: WritableFile[],
+  async writeFile(
+    file: WritableFile,
     options?: { writePath?: string; replace?: boolean },
   ) {
     const writePath =
-      options.writePath?.length > 0
+      options?.writePath?.length > 0
         ? options.writePath
-        : path.join(process.cwd(), 'public/images');
-
-    const writePromises = files.map((f) => {
-      return writeFile(path.join(writePath, f.filename + '.webp'), f.buffer);
-    });
-
-    await Promise.allSettled(writePromises);
+        : path.join(process.cwd(), 'public', 'images');
+    await writeFile(path.join(writePath, file.filename), file.buffer);
   }
 }
