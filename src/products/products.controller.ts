@@ -31,7 +31,6 @@ export class ProductsController {
   async createBulk(
     @UploadedFile(BulkUploadPipe) productsData: CreateProductDto[],
   ) {
-    console.log(productsData);
     return this.productsService.createBulk(productsData);
   }
 
