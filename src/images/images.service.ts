@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { writeFile } from 'fs/promises';
+import { rm, writeFile } from 'fs/promises';
 import * as path from 'path';
 
 export class WritableFile {
@@ -25,5 +25,14 @@ export class ImageService {
         ? options.writePath
         : path.join(process.cwd(), 'public', 'images');
     await writeFile(path.join(writePath, file.filename), file.buffer);
+  }
+
+  async deleteFile(name: string, options?: { filePath: string }) {
+    const filePath =
+      options?.filePath?.length > 0
+        ? options.filePath
+        : path.join(process.cwd(), 'public', 'images', name + '.webp');
+
+    await rm(filePath, { force: true });
   }
 }
