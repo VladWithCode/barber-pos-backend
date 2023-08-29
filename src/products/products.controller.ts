@@ -15,6 +15,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SharpPipe } from 'src/images/pipes/sharp-pipe/sharp-pipe.pipe';
+import { BulkUploadPipe } from './pipes/bulk-upload.pipe';
 
 @Controller('products')
 export class ProductsController {
@@ -25,13 +26,13 @@ export class ProductsController {
     return this.productsService.create(createProductDto);
   }
 
-  @Post(':id/picture')
-  @UseInterceptors(FileInterceptor('picture'))
-  async uploadPicture(
-    @Param('id') id: string,
-    @UploadedFile(SharpPipe) picture: Buffer,
+  @Post('bulk')
+  @UseInterceptors(FileInterceptor('products_data'))
+  async createBulk(
+    @UploadedFile(BulkUploadPipe) productsData: CreateProductDto[],
   ) {
-    return this.productsService.uploadPictures(id, picture);
+    console.log(productsData);
+    return this.productsService.createBulk(productsData);
   }
 
   @Get()
@@ -54,10 +55,17 @@ export class ProductsController {
   async updatePictures(
     @Param('id') id: string,
     @UploadedFile(SharpPipe) picture: Buffer,
-  ) {}
+  ) {
+    return this.productsService.updatePicture(id, picture);
+  }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string) {
     return this.productsService.remove(id);
+  }
+
+  @Delete(':id/picture')
+  async deletePicture(@Param('id') id: string) {
+    return await this.productsService.deletePicture(id);
   }
 }

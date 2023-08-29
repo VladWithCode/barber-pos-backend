@@ -16,41 +16,83 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto) {
-    const registedDate = createProductDto.register_date || new Date();
-    const product = new this.productModel({
-      ...createProductDto,
-      sell_price_cash: this.numberToSafeAmount(
-        createProductDto.sell_price_cash,
-      ),
-      sell_price_credit: this.numberToSafeAmount(
-        createProductDto.sell_price_credit,
-      ),
+    const registerDate = createProductDto.register_date || new Date();
+    const product = this.productFromDTO(createProductDto, {
+      withDate: registerDate,
     });
-    const stockEntries: StockEntry[] = [
-      {
-        buy_price: this.numberToSafeAmount(createProductDto.buy_price),
-        use: ProductUses.VENTA,
-        units_available: createProductDto.sale_units,
-        units_sold: 0,
-        date_registered: registedDate,
-      },
-      {
-        buy_price: this.numberToSafeAmount(createProductDto.buy_price),
-        use: ProductUses.INSUMO,
-        units_available: createProductDto.supply_units,
-        units_sold: 0,
-        date_registered: registedDate,
-      },
-    ];
-
-    product.stocks = stockEntries;
 
     const savedProduct = await product.save();
 
     return savedProduct;
   }
 
-  async uploadPictures(id: string, picture: Buffer) {
+  async createBulk(createProductDtos: CreateProductDto[]) {
+    const registerDate = new Date();
+    const products = createProductDtos.map((dto) =>
+      this.productFromDTO(dto, { withDate: registerDate }),
+    );
+
+    try {
+      const saveResult = await this.productModel.bulkSave(products);
+
+      console.log(saveResult);
+
+      return { message: 'Productos agregados con exito' };
+    } catch (e) {
+      return new HttpException(
+        { message: 'Error al guardar los productos' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: e },
+      );
+    }
+  }
+
+  async findAll() {
+    const products = await this.productModel.find().lean();
+
+    return products;
+  }
+
+  async findOne(id: string) {
+    const product = await this.productModel.findById(id).lean();
+
+    if (!product)
+      return {
+        message: 'No se encontró el producto con id: ' + id,
+      };
+
+    return { product };
+  }
+
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    const product = await this.productModel.findById(id);
+
+    if (!product)
+      throw new HttpException(
+        { message: 'Producto inexistente' },
+        HttpStatus.NOT_FOUND,
+      );
+
+    product.set({
+      ...updateProductDto,
+    });
+
+    try {
+      await product.save();
+      return {
+        message: 'Producto actualizado.',
+      };
+    } catch (e) {
+      console.error(e);
+      throw new HttpException(
+        { message: 'Error al actualizar el producto' },
+        HttpStatus.BAD_REQUEST,
+        { cause: e },
+      );
+    }
+  }
+
+  async updatePicture(id: string, picture: Buffer) {
     const product = await this.productModel.findById(id);
     const productSlug = product.name
       .toLowerCase()
@@ -80,52 +122,99 @@ export class ProductsService {
     return product;
   }
 
-  async findAll() {
-    const products = await this.productModel.find().lean();
-
-    return products;
-  }
-
-  async findOne(id: string) {
-    const product = await this.productModel.findById(id).lean();
+  async remove(id: string) {
+    const product = await this.productModel.findByIdAndDelete({ _id: id });
 
     if (!product)
       return {
-        message: 'No se encontró el producto con id: ' + id,
+        message:
+          'No se eliminó ningún producto. El producto que deseas eliminar podría ya no existir',
       };
 
-    return { product };
+    let wasImageDeleted = true;
+
+    try {
+      await this.imagesService.deleteFile(path.parse(product.picture).name);
+    } catch (e) {
+      console.error(e);
+      wasImageDeleted = false;
+    }
+
+    return {
+      message: 'Producto eliminado con exito',
+      wasImageDeleted,
+    };
   }
 
-  update(id: string, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
-  }
-
-  async updatePictures(id: string, pictures: Buffer[]) {
+  async deletePicture(id: string) {
     const product = await this.productModel.findById(id);
-    const pictureFilePath = path.join(process.cwd(), 'public/images');
-    const productSlug = product.name
-      .toLowerCase()
-      .split(' ')
-      .filter(Boolean)
-      .join('-');
 
-    await product.save();
+    if (!product)
+      throw new HttpException(
+        { message: 'Producto inexistente' },
+        HttpStatus.BAD_REQUEST,
+      );
 
-    return product;
+    if (!product.picture)
+      return { message: 'Este producto no tiene una imagen asociada' };
+
+    try {
+      await this.imagesService.deleteFile(path.parse(product.picture).name);
+
+      product.picture = '';
+
+      await product.save();
+
+      return {
+        message: 'Imagen eliminada con exito',
+      };
+    } catch (e) {
+      throw new HttpException(
+        {
+          message: 'Error al eliminar la imagen asociada a este producto',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} product`;
+  async updateStock() {}
+
+  private productFromDTO(dto: CreateProductDto, options?: { withDate: Date }) {
+    const resultProduct = new this.productModel({
+      ...dto,
+      sell_price_cash: this.numberToSafeAmount(dto.sell_price_cash),
+      sell_price_credit: this.numberToSafeAmount(dto.sell_price_credit),
+    });
+    const stockEntries: StockEntry[] = [
+      {
+        buy_price: this.numberToSafeAmount(dto.buy_price),
+        use: ProductUses.VENTA,
+        units_available: dto.sale_units,
+        units_sold: 0,
+        date_registered: options?.withDate || dto.register_date,
+      },
+      {
+        buy_price: this.numberToSafeAmount(dto.buy_price),
+        use: ProductUses.INSUMO,
+        units_available: dto.supply_units,
+        units_sold: 0,
+        date_registered: options?.withDate || dto.register_date,
+      },
+    ];
+
+    resultProduct.stocks = stockEntries;
+
+    return resultProduct;
   }
 
   private numberToSafeAmount(n: number): number {
     let safeN = 0;
     const [i, d] = n.toFixed(2).split('.');
 
-    if (+d > 0) safeN = safeN + parseInt(d);
+    safeN += parseInt(d);
 
-    safeN = parseInt(i) * 100 + safeN;
+    safeN += parseInt(i) * 100;
 
     return safeN;
   }
