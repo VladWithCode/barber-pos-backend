@@ -7,7 +7,9 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.enableCors({ origin: 'http://localhost:3030' });
+  app.enableCors({
+    origin: ['http://localhost:3030', 'http://192.168.1.6:3030'],
+  });
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.useStaticAssets(join(process.cwd(), 'public'));
 
