@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   Put,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -35,8 +36,8 @@ export class ProductsController {
   }
 
   @Get()
-  findAll() {
-    return this.productsService.findAll();
+  findAll(@Query('limit') limit: number, @Query('skip') skip: number) {
+    return this.productsService.findAll({ limit, skip });
   }
 
   @Get(':id')

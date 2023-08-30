@@ -47,8 +47,12 @@ export class ProductsService {
     }
   }
 
-  async findAll() {
-    const products = await this.productModel.find().lean();
+  async findAll({ limit = 0, skip = 0 }) {
+    const products = await this.productModel
+      .find()
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
     return products;
   }
