@@ -6,6 +6,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { MulterModule } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { SalesModule } from './sales/sales.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { memoryStorage } from 'multer';
       storage: memoryStorage(),
     }),
     ProductsModule,
+    SalesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
