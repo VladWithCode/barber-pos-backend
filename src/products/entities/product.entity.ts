@@ -9,7 +9,7 @@ export class StockEntry {
   @Prop()
   buy_price: number;
 
-  @Prop({ default: 1 })
+  @Prop()
   units_available: number;
 
   @Prop({ default: 0 })
@@ -17,14 +17,17 @@ export class StockEntry {
 
   @Prop({ default: Date })
   date_registered: Date;
+
+  @Prop()
+  utility?: number;
 }
 
 const StockEntrySchema = SchemaFactory.createForClass(StockEntry);
 
-export const ProductUses: { VENTA: 'sale'; INSUMO: 'supply' } = {
+export const ProductUses = {
   VENTA: 'sale',
   INSUMO: 'supply',
-};
+} as const;
 
 export type ProductUse = (typeof ProductUses)[keyof typeof ProductUses];
 export type ProductDocument = HydratedDocument<Product>;
@@ -60,6 +63,9 @@ export class Product {
 
   @Prop({ default: true })
   enabled: boolean;
+
+  @Prop()
+  total_utility: number;
 
   /*   // Props tentativas
   @Prop()

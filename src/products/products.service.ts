@@ -3,10 +3,11 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product, ProductUses, StockEntry } from './entities/product.entity';
-import { Model } from 'mongoose';
+import { Document, Model } from 'mongoose';
 import { ImageService } from 'src/images/images.service';
 import * as path from 'path';
 import { asyncHandler } from 'src/utils/helpers';
+import { SaleItem } from 'src/sales/entities/sale.entity';
 
 @Injectable()
 export class ProductsService {
@@ -35,8 +36,6 @@ export class ProductsService {
     try {
       const saveResult = await this.productModel.bulkSave(products);
 
-      console.log(saveResult);
-
       return { message: 'Productos agregados con exito' };
     } catch (e) {
       return new HttpException(
@@ -53,6 +52,28 @@ export class ProductsService {
       .skip(skip)
       .limit(limit)
       .lean();
+
+    return products;
+  }
+
+  async find({
+    match,
+    lean,
+    limit,
+    skip,
+  }: {
+    match?: Record<string, any>;
+    limit?: number;
+    skip?: number;
+    lean?: boolean;
+  }) {
+    const findQuery = this.productModel.find(match || {});
+
+    if (lean) findQuery.lean();
+    if (limit) findQuery.limit(limit);
+    if (skip) findQuery.skip(skip);
+
+    const products = await findQuery.exec();
 
     return products;
   }
@@ -180,6 +201,35 @@ export class ProductsService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async updateProductsOnSale({ soldItems }: { soldItems: SaleItem[] }) {
+    const hashedItems: Record<string, SaleItem> = {};
+    const productIds = soldItems.map((item) => {
+      hashedItems[item.product.toString()] = item;
+      return item.product;
+    });
+
+    const products = await this.productModel.find({
+      _id: {
+        $in: productIds,
+      },
+    });
+
+    products.forEach((product) => {
+      const item = hashedItems[product._id.toString()];
+      const stockEntry = product.stocks.find(
+        (stock: StockEntry & Document) =>
+          stock._id.toString() === item.stock_entry_id,
+      );
+
+      stockEntry.units_available -= item.quantity;
+      stockEntry.units_sold += item.quantity;
+    });
+
+    const saveResult = await this.productModel.bulkSave(products);
+
+    return saveResult.modifiedCount === products.length;
   }
 
   async updateStock() {}
