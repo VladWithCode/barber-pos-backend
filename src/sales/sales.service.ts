@@ -98,6 +98,7 @@ export class SalesService {
       await sale.save(),
       await this.productService.updateProductsOnSale({
         soldItems: saleItems,
+        isCashSale: createSaleDto.payment_type === 'cash',
       }),
     ]);
 
