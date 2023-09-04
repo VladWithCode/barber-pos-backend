@@ -3,7 +3,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product, ProductUses, StockEntry } from './entities/product.entity';
-import { Document, Model } from 'mongoose';
+import { Document, Model, mongo } from 'mongoose';
 import { ImageService } from 'src/images/images.service';
 import * as path from 'path';
 import { asyncHandler } from 'src/utils/helpers';
@@ -203,7 +203,13 @@ export class ProductsService {
     }
   }
 
-  async updateProductsOnSale({ soldItems }: { soldItems: SaleItem[] }) {
+  async updateProductsOnSale({
+    soldItems,
+    isCashSale,
+  }: {
+    soldItems: SaleItem[];
+    isCashSale: boolean;
+  }) {
     const hashedItems: Record<string, SaleItem> = {};
     const productIds = soldItems.map((item) => {
       hashedItems[item.product.toString()] = item;
@@ -225,6 +231,10 @@ export class ProductsService {
 
       stockEntry.units_available -= item.quantity;
       stockEntry.units_sold += item.quantity;
+
+      if (isCashSale)
+        stockEntry.utility =
+          (stockEntry.utility || 0) + item.sale_price - stockEntry.buy_price;
     });
 
     const saveResult = await this.productModel.bulkSave(products);
@@ -240,8 +250,11 @@ export class ProductsService {
       sell_price_cash: this.numberToSafeAmount(dto.sell_price_cash),
       sell_price_credit: this.numberToSafeAmount(dto.sell_price_credit),
     });
+    const defaultSaleStockId = new mongo.ObjectId();
+    const defaultSupplyStockId = new mongo.ObjectId();
     const stockEntries: StockEntry[] = [
       {
+        _id: defaultSaleStockId,
         buy_price: this.numberToSafeAmount(dto.buy_price),
         use: ProductUses.VENTA,
         units_available: dto.sale_units,
@@ -249,6 +262,7 @@ export class ProductsService {
         date_registered: options?.withDate || dto.register_date,
       },
       {
+        _id: defaultSupplyStockId,
         buy_price: this.numberToSafeAmount(dto.buy_price),
         use: ProductUses.INSUMO,
         units_available: dto.supply_units,
@@ -258,6 +272,8 @@ export class ProductsService {
     ];
 
     resultProduct.stocks = stockEntries;
+    resultProduct.default_sale_stock_id = defaultSaleStockId.toString();
+    resultProduct.default_supply_stock_id = defaultSupplyStockId.toString();
 
     return resultProduct;
   }

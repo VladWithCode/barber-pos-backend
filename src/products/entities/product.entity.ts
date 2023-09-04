@@ -1,8 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 @Schema()
 export class StockEntry {
+  @Prop()
+  _id: Types.ObjectId;
+
   @Prop({ enum: ['sale', 'supply'] })
   use: ProductUse;
 
@@ -66,6 +69,12 @@ export class Product {
 
   @Prop()
   total_utility: number;
+
+  @Prop()
+  default_sale_stock_id: string;
+
+  @Prop()
+  default_supply_stock_id: string;
 
   /*   // Props tentativas
   @Prop()
