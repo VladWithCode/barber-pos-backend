@@ -3,7 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './entities/user.entity';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { compare, hash } from 'bcrypt';
 
 @Injectable()
@@ -12,8 +12,11 @@ export class UsersService {
     @InjectModel(User.name) private readonly userModel: Model<User>,
   ) {}
 
-  async validateUser(username: string, password: string): Promise<boolean> {
-    const user = await this.find({ match: { username } })[0];
+  async validateUser(username: string, password: string): Promise<User> {
+    const user = await this.userModel
+      .findOne({ username })
+      .select('+password')
+      .lean();
 
     if (!user)
       throw new HttpException(
@@ -29,7 +32,10 @@ export class UsersService {
     if (!isPasswordValid)
       throw new HttpException('Contraseña incorrecta', HttpStatus.UNAUTHORIZED);
 
-    return isPasswordValid;
+    return {
+      ...user,
+      password: undefined,
+    };
   }
 
   async create(createUserDto: CreateUserDto) {
@@ -64,8 +70,8 @@ export class UsersService {
         {
           message:
             skip > 0
-              ? 'No se han encontrado más productos'
-              : 'No hay productos en la base de datos',
+              ? 'No se han encontrado más usuarios'
+              : 'No hay usuarios en la base de datos',
         },
         HttpStatus.NOT_FOUND,
       );
@@ -81,14 +87,14 @@ export class UsersService {
 
     if (!foundUser)
       throw new HttpException(
-        { message: 'User not found' },
+        { message: 'Usuario no encontrado' },
         HttpStatus.NOT_FOUND,
       );
 
     return foundUser;
   }
 
-  async find({ match }: { match: Partial<User> }): Promise<User[]> {
+  async find({ match }: { match: FilterQuery<User> }): Promise<User[]> {
     const foundUsers = await this.userModel.find(match);
 
     return foundUsers;
@@ -115,7 +121,7 @@ export class UsersService {
     };
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const { deletedCount } = await this.userModel.deleteOne({ _id: id });
 
     if (deletedCount === 0)
