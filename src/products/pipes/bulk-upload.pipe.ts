@@ -1,5 +1,4 @@
-import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
-import { CreateProductDto } from '../dto/create-product.dto';
+import { Injectable, PipeTransform } from '@nestjs/common';
 
 @Injectable()
 export class BulkUploadPipe

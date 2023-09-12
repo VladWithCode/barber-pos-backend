@@ -8,7 +8,11 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors({
-    origin: ['http://localhost:3030', 'http://192.168.1.6:3030'],
+    origin: [
+      'http://localhost:3030',
+      'http://192.168.1.2:3030',
+      'https://barbershop-pos.vercel.app/',
+    ],
   });
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.useStaticAssets(join(process.cwd(), 'public'));

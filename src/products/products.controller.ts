@@ -28,16 +28,25 @@ export class ProductsController {
   }
 
   @Post('bulk')
+  async createBulk(@Body() createProductDtos: CreateProductDto[]) {
+    return this.productsService.createBulk(createProductDtos);
+  }
+
+  @Post('bulk-file')
   @UseInterceptors(FileInterceptor('products_data'))
-  async createBulk(
+  async createBulkFromFile(
     @UploadedFile(BulkUploadPipe) productsData: CreateProductDto[],
   ) {
     return this.productsService.createBulk(productsData);
   }
 
   @Get()
-  findAll(@Query('limit') limit: number, @Query('skip') skip: number) {
-    return this.productsService.findAll({ limit, skip });
+  findAll(
+    @Query('search') search: string,
+    @Query('limit') limit: number,
+    @Query('skip') skip: number,
+  ) {
+    return this.productsService.findAll({ search, limit, skip });
   }
 
   @Get(':id')

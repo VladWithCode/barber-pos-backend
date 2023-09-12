@@ -35,8 +35,6 @@ export class ProductsService {
     try {
       const saveResult = await this.productModel.bulkSave(products);
 
-      console.log(saveResult);
-
       return { message: 'Productos agregados con exito' };
     } catch (e) {
       return new HttpException(
@@ -47,9 +45,10 @@ export class ProductsService {
     }
   }
 
-  async findAll({ limit = 0, skip = 0 }) {
+  async findAll({ search = '', limit = 0, skip = 0 }) {
+    const findQuery = search.length > 0 ? { $text: { $search: search } } : {};
     const products = await this.productModel
-      .find()
+      .find(findQuery)
       .skip(skip)
       .limit(limit)
       .lean();
