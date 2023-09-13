@@ -11,7 +11,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3030',
       'http://192.168.1.2:3030',
-      'https://barbershop-pos.vercel.app/',
+      'https://barbershop-pos.vercel.app',
     ],
   });
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
