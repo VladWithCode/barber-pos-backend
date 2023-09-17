@@ -12,5 +12,6 @@ import { ImagesModule } from 'src/images/images.module';
   ],
   controllers: [ProductsController],
   providers: [ProductsService],
+  exports: [ProductsService],
 })
 export class ProductsModule {}

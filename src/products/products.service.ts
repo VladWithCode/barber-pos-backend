@@ -3,10 +3,11 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product, ProductUses, StockEntry } from './entities/product.entity';
-import { Model } from 'mongoose';
+import { Document, Model, mongo } from 'mongoose';
 import { ImageService } from 'src/images/images.service';
 import * as path from 'path';
 import { asyncHandler } from 'src/utils/helpers';
+import { SaleItem } from 'src/sales/entities/sale.entity';
 
 @Injectable()
 export class ProductsService {
@@ -52,6 +53,28 @@ export class ProductsService {
       .skip(skip)
       .limit(limit)
       .lean();
+
+    return products;
+  }
+
+  async find({
+    match,
+    lean,
+    limit,
+    skip,
+  }: {
+    match?: Record<string, any>;
+    limit?: number;
+    skip?: number;
+    lean?: boolean;
+  }) {
+    const findQuery = this.productModel.find(match || {});
+
+    if (lean) findQuery.lean();
+    if (limit) findQuery.limit(limit);
+    if (skip) findQuery.skip(skip);
+
+    const products = await findQuery.exec();
 
     return products;
   }
@@ -181,6 +204,45 @@ export class ProductsService {
     }
   }
 
+  async updateProductsOnSale({
+    soldItems,
+    isCashSale,
+  }: {
+    soldItems: SaleItem[];
+    isCashSale: boolean;
+  }) {
+    const hashedItems: Record<string, SaleItem> = {};
+    const productIds = soldItems.map((item) => {
+      hashedItems[item.product.toString()] = item;
+      return item.product;
+    });
+
+    const products = await this.productModel.find({
+      _id: {
+        $in: productIds,
+      },
+    });
+
+    products.forEach((product) => {
+      const item = hashedItems[product._id.toString()];
+      const stockEntry = product.stocks.find(
+        (stock: StockEntry & Document) =>
+          stock._id.toString() === item.stock_entry_id,
+      );
+
+      stockEntry.units_available -= item.quantity;
+      stockEntry.units_sold += item.quantity;
+
+      if (isCashSale)
+        stockEntry.utility =
+          (stockEntry.utility || 0) + item.sale_price - stockEntry.buy_price;
+    });
+
+    const saveResult = await this.productModel.bulkSave(products);
+
+    return saveResult.modifiedCount === products.length;
+  }
+
   async updateStock() {}
 
   private productFromDTO(dto: CreateProductDto, options?: { withDate: Date }) {
@@ -189,8 +251,11 @@ export class ProductsService {
       sell_price_cash: this.numberToSafeAmount(dto.sell_price_cash),
       sell_price_credit: this.numberToSafeAmount(dto.sell_price_credit),
     });
+    const defaultSaleStockId = new mongo.ObjectId();
+    const defaultSupplyStockId = new mongo.ObjectId();
     const stockEntries: StockEntry[] = [
       {
+        _id: defaultSaleStockId,
         buy_price: this.numberToSafeAmount(dto.buy_price),
         use: ProductUses.VENTA,
         units_available: dto.sale_units,
@@ -198,6 +263,7 @@ export class ProductsService {
         date_registered: options?.withDate || dto.register_date,
       },
       {
+        _id: defaultSupplyStockId,
         buy_price: this.numberToSafeAmount(dto.buy_price),
         use: ProductUses.INSUMO,
         units_available: dto.supply_units,
@@ -207,6 +273,8 @@ export class ProductsService {
     ];
 
     resultProduct.stocks = stockEntries;
+    resultProduct.default_sale_stock_id = defaultSaleStockId.toString();
+    resultProduct.default_supply_stock_id = defaultSupplyStockId.toString();
 
     return resultProduct;
   }
