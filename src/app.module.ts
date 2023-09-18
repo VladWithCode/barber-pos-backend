@@ -9,6 +9,7 @@ import { memoryStorage } from 'multer';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { SalesModule } from './sales/sales.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { SalesModule } from './sales/sales.module';
     UsersModule,
     AuthModule,
     SalesModule,
+    CustomersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

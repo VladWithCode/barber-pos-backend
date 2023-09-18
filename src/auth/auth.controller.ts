@@ -5,6 +5,7 @@ import {
   Request,
   Param,
   Get,
+  Delete,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -21,6 +22,11 @@ export class AuthController {
   @Post('login')
   async login(@Request() req) {
     return this.authService.login(req.user);
+  }
+
+  @Delete('logout')
+  async logout() {
+    return 'logout';
   }
 
   @UseGuards(JwtAuthGuard)
