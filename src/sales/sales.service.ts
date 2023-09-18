@@ -70,8 +70,8 @@ export class SalesService {
     const payment = {
       amount: numberToSafeAmount(createSaleDto.deposit),
       date: createSaleDto.deposit_date || new Date(),
-      method: createSaleDto.deposit_payment_method,
-      received_by: createSaleDto.received_by,
+      method: createSaleDto.payment_method,
+      received_by: createSaleDto.seller,
     };
 
     const sale = new this.saleModel({

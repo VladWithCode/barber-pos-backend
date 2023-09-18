@@ -79,9 +79,9 @@ export class UsersService {
     return foundUsers;
   }
 
-  async findOne(id: string) {
+  async findOne(username: string) {
     const foundUser = await this.userModel
-      .findById(id)
+      .findOne({ username })
       .select('-password')
       .lean();
 
