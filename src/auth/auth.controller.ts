@@ -30,9 +30,9 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  getProfile(@Param('id') id: string) {
-    return 'user';
+  @Get('validate')
+  validateLogin(@Request() req: any) {
+    return this.authService.validateLogin(req);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
