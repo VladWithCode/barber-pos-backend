@@ -20,26 +20,36 @@ import { UserRoles } from './entities/user.entity';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoles.ADMIN, UserRoles.USER)
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoles.ADMIN, UserRoles.USER)
   @Get()
   findAll() {
     return this.usersService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoles.ADMIN, UserRoles.USER)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoles.ADMIN, UserRoles.USER)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(+id, updateUserDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoles.ADMIN)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
