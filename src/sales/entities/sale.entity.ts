@@ -70,6 +70,9 @@ export class Sale {
   @Prop({ type: Types.ObjectId, ref: 'Customer' })
   customer?: string;
 
+  @Prop()
+  customer_name: string;
+
   // TODO: This has to be a ref to the User collection
   @Prop({ type: Types.ObjectId, ref: 'User' })
   seller: string;
