@@ -31,4 +31,12 @@ export class AuthService {
       },
     };
   }
+
+  validateLogin(req: any) {
+    if (req.user) {
+      return { username: req.user.username, role: req.user.role };
+    }
+
+    return null;
+  }
 }
