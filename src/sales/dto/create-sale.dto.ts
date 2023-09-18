@@ -26,10 +26,10 @@ export class CreateSaleDto {
 
   deposit_date: Date;
 
-  deposit_payment_method: TPaymentMethod;
+  payment_method: TPaymentMethod;
 
   @IsString()
-  received_by: string;
+  seller: string;
 
   @IsOptional()
   @IsNumber()
