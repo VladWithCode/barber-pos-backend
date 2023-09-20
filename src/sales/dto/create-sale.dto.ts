@@ -10,6 +10,8 @@ export type CreateSaleItem = {
   quantity: number;
   stock_entry_id: string;
   sale_price: number;
+  qty: number;
+  total: number;
 };
 
 export class CreateSaleDto {
@@ -40,7 +42,7 @@ export class CreateSaleDto {
 
   @IsOptional()
   @IsNumber()
-  commision?: number;
+  commission?: number;
 
   @IsOptional()
   credit_start_date?: Date;
