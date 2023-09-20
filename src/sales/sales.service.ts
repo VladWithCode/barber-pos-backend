@@ -10,19 +10,39 @@ import { Model } from 'mongoose';
 import { Sale, SaleItem } from './entities/sale.entity';
 import { ProductsService } from 'src/products/products.service';
 import { addMonths, setDate } from 'date-fns';
-import { numberToSafeAmount } from 'src/utils/helpers';
+import { isValidId, numberToSafeAmount } from 'src/utils/helpers';
+import { CustomerDocument } from 'src/customers/entities/customer.entity';
+import { CustomersService } from 'src/customers/customers.service';
 
 @Injectable()
 export class SalesService {
   constructor(
     @InjectModel(Sale.name) private readonly saleModel: Model<Sale>,
     private readonly productService: ProductsService,
+    private readonly customerService: CustomersService,
   ) {}
 
   async create(createSaleDto: CreateSaleDto) {
     const hashedItems: Record<string, CreateSaleItem> = {};
     let total = 0;
     let paid_amount = numberToSafeAmount(createSaleDto.deposit);
+    let customer: CustomerDocument | null = null;
+    let customerName = createSaleDto.customer;
+
+    if (isValidId(createSaleDto.customer)) {
+      console.log(createSaleDto.customer.length);
+      customer = await this.customerService.findOne(createSaleDto.customer);
+
+      if (!customer) {
+        throw new HttpException(
+          {
+            message: 'El cliente no se encontró en la Base de Datos',
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      customerName = customer.fullname;
+    }
 
     const products = await this.productService.find({
       match: {
@@ -76,6 +96,8 @@ export class SalesService {
 
     const sale = new this.saleModel({
       ...createSaleDto,
+      customer: customer?._id || '',
+      customer_name: customerName,
       deposit: numberToSafeAmount(createSaleDto.deposit),
       deposit_date: payment.date,
       paid_amount: paid_amount,
