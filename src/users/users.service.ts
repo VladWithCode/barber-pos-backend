@@ -20,8 +20,8 @@ export class UsersService {
 
     if (!user)
       throw new HttpException(
-        `El usuario ${username} no existe`,
-        HttpStatus.NOT_FOUND,
+        `Usuario o contraseña incorrectos`,
+        HttpStatus.UNAUTHORIZED,
       );
 
     const isPasswordValid = await this.validatePassword(
@@ -30,7 +30,10 @@ export class UsersService {
     );
 
     if (!isPasswordValid)
-      throw new HttpException('Contraseña incorrecta', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Usuario o contraseña incorrectos',
+        HttpStatus.UNAUTHORIZED,
+      );
 
     return {
       ...user,
