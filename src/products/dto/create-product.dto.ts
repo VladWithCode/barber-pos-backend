@@ -23,7 +23,6 @@ export class CreateProductDto {
 
   @IsString()
   category?: string;
-  // use: ProductUse;
 
   @IsNumber()
   buy_price: number;
@@ -39,15 +38,6 @@ export class CreateProductDto {
 
   @IsNumber()
   supply_units: number;
-
-  @IsOptional()
-  @IsNumber()
-  thumb?: number;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  pictures?: string[];
 
   @IsOptional()
   @IsBoolean()
