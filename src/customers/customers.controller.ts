@@ -3,10 +3,11 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
+  Put,
+  Query,
 } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -30,8 +31,8 @@ export class CustomersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRoles.ADMIN, UserRoles.USER)
   @Get()
-  findAll() {
-    return this.customersService.findAll();
+  findAll(@Query('search') search: string, @Query('active') active: boolean) {
+    return this.customersService.find({ search, active, limit: 0, skip: 0 });
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -43,7 +44,7 @@ export class CustomersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRoles.ADMIN, UserRoles.USER)
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id') id: string,
     @Body() updateCustomerDto: UpdateCustomerDto,
