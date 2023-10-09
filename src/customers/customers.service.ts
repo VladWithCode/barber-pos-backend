@@ -28,15 +28,17 @@ export class CustomersService {
   }
 
   async find({
-    search,
+    search = '',
     limit,
     skip,
+    active,
   }: {
     search: string;
     limit: number;
     skip: number;
+    active?: boolean;
   }) {
-    const filter = search?.length > 0 ? { $text: { $search: search } } : {};
+    const filter = search.length > 0 ? { $text: { $search: search } } : {};
     const findQuery = this.customerModel.find(filter);
 
     if (limit && limit > 0) findQuery.limit(limit);
