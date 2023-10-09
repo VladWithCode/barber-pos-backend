@@ -10,6 +10,7 @@ import {
   Put,
   UploadedFile,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -17,6 +18,11 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SharpPipe } from 'src/images/pipes/sharp-pipe/sharp-pipe.pipe';
 import { BulkUploadPipe } from './pipes/bulk-upload.pipe';
+import { InventoryEntryDto } from './dto/inventory-entrance.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UserRoles } from 'src/users/entities/user.entity';
 
 @Controller('products')
 export class ProductsController {
@@ -38,6 +44,18 @@ export class ProductsController {
     @UploadedFile(BulkUploadPipe) productsData: CreateProductDto[],
   ) {
     return this.productsService.createBulk(productsData);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRoles.USER, UserRoles.ADMIN)
+  @Patch('inventory-entry')
+  async registerEntry(
+    @Body() data: { entry: InventoryEntryDto; newProducts: CreateProductDto[] },
+  ) {
+    return this.productsService.registerInventoryEntry(
+      data.entry,
+      data.newProducts,
+    );
   }
 
   @Get()
