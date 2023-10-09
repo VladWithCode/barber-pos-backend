@@ -14,11 +14,20 @@ export class Customer {
   @Prop({ required: true, unique: true })
   phone: string;
 
-  @Prop({ type: String, enum: ['Facebook', 'Twitter', 'Instagram', 'TikTok'] })
+  @Prop({ type: String, enum: ['facebook', 'twitter', 'instagram', 'tiktok'] })
   social_media: SocialMedia;
 
   @Prop()
+  social_media_name: string;
+
+  @Prop()
   dob: Date;
+
+  @Prop()
+  address: string;
+
+  @Prop()
+  active: string;
 }
 
 export type CustomerDocument = HydratedDocument<Customer>;

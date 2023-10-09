@@ -5,7 +5,9 @@ export class CreateCustomerDto {
 
   phone: string;
 
-  social_media: SocialMedia;
+  social_media?: SocialMedia;
 
-  dob: Date;
+  social_media_name?: string;
+
+  dob?: Date;
 }
