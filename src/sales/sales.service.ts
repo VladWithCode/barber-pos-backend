@@ -13,6 +13,7 @@ import { addMonths, setDate } from 'date-fns';
 import { isValidId, numberToSafeAmount } from 'src/utils/helpers';
 import { CustomerDocument } from 'src/customers/entities/customer.entity';
 import { CustomersService } from 'src/customers/customers.service';
+import { SavePaymentDto } from './dto/save-payment.dto';
 
 @Injectable()
 export class SalesService {
@@ -145,13 +146,28 @@ export class SalesService {
     return createSaleResult;
   }
 
-  async findAll() {
-    const sales = await this.saleModel.find().lean();
+  async savePayment(saleId: string, paymentDto: SavePaymentDto) {}
 
-    return sales;
+  async findAll({
+    search = '',
+    limit,
+    skip,
+  }: {
+    search: string;
+    limit?: number;
+    skip?: number;
+  }) {
+    const filter = search.length > 0 ? { $text: { $search: search } } : {};
+    const findQuery = this.saleModel.find(filter);
+
+    if (limit > 0) findQuery.limit(limit);
+
+    if (skip > 0) findQuery.skip(skip);
+
+    return await findQuery.lean().exec();
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const sale = await this.saleModel.findById(id).lean();
 
     return sale;
