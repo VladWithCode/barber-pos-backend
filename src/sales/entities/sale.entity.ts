@@ -121,6 +121,15 @@ export class Sale {
 
   @Prop({ enum: ['paid', 'pending_payment', 'over_due'] })
   status: TSaleStatus;
+
+  @Prop({ default: 0 })
+  total_interest: number;
+
+  @Prop({ default: 0 })
+  interest_paid: number;
+
+  @Prop({ default: 0 })
+  interest_pending: number;
 }
 
 export const SaleSchema = SchemaFactory.createForClass(Sale);
