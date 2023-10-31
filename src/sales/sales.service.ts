@@ -6,11 +6,11 @@ import {
 } from './dto/create-sale.dto';
 import { UpdateSaleDto } from './dto/update-sale.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, mongo } from 'mongoose';
 import { Sale, SaleItem } from './entities/sale.entity';
 import { ProductsService } from 'src/products/products.service';
 import { addMonths, setDate } from 'date-fns';
-import { isValidId, numberToSafeAmount } from 'src/utils/helpers';
+import { asyncHandler, isValidId, numberToSafeAmount } from 'src/utils/helpers';
 import { CustomerDocument } from 'src/customers/entities/customer.entity';
 import { CustomersService } from 'src/customers/customers.service';
 import { SavePaymentDto } from './dto/save-payment.dto';
@@ -31,8 +31,20 @@ export class SalesService {
     let customerName = createSaleDto.customer;
 
     if (isValidId(createSaleDto.customer)) {
-      console.log(createSaleDto.customer.length);
-      customer = await this.customerService.findOne(createSaleDto.customer);
+      let findCustomerError: Error;
+
+      [findCustomerError, customer] = await asyncHandler(
+        this.customerService.findOne(createSaleDto.customer),
+      );
+
+      if (findCustomerError)
+        throw new HttpException(
+          {
+            message:
+              'Ocurrio un error al buscar al cliente en la base de datos.',
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
 
       if (!customer) {
         throw new HttpException(
@@ -42,6 +54,7 @@ export class SalesService {
           HttpStatus.NOT_FOUND,
         );
       }
+
       customerName = customer.fullname;
     }
 
@@ -95,8 +108,10 @@ export class SalesService {
       received_by: createSaleDto.seller,
     };
 
+    const saleId = new mongo.ObjectId();
     const sale = new this.saleModel({
       ...createSaleDto,
+      _id: saleId,
       customer: customer?._id || '',
       customer_name: customerName,
       deposit: numberToSafeAmount(createSaleDto.deposit),
@@ -115,15 +130,21 @@ export class SalesService {
       );
 
       sale.set(creditFields);
+      customer.active_credits++;
+      customer.pending_payments_amount += sale.pending_amount;
     }
 
-    const [saveSaleResult, updateProductsResult] = await Promise.allSettled([
-      await sale.save(),
-      await this.productService.updateProductsOnSale({
-        soldItems: saleItems,
-        isCashSale: createSaleDto.payment_type === 'cash',
-      }),
-    ]);
+    customer.sales.push(saleId.toString());
+
+    const [saveSaleResult, updateProductsResult, updateCustomerResult] =
+      await Promise.allSettled([
+        sale.save(),
+        this.productService.updateProductsOnSale({
+          soldItems: saleItems,
+          isCashSale: createSaleDto.payment_type === 'cash',
+        }),
+        customer.save(),
+      ]);
 
     if (saveSaleResult.status === 'rejected') {
       throw new HttpException(
@@ -141,6 +162,10 @@ export class SalesService {
 
     if (updateProductsResult.status === 'rejected') {
       createSaleResult['updateProductsError'] = updateProductsResult.reason;
+    }
+
+    if (updateCustomerResult.status === 'rejected') {
+      createSaleResult['updateCustomerError'] = updateCustomerResult.reason;
     }
 
     return createSaleResult;
