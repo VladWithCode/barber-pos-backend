@@ -2,8 +2,10 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, MongooseError } from 'mongoose';
+import mongoose, { Model, MongooseError } from 'mongoose';
 import { Customer, CustomerDocument } from './entities/customer.entity';
+import { asyncHandler } from 'src/utils/helpers';
+import { SaleDocument } from 'src/sales/entities/sale.entity';
 
 @Injectable()
 export class CustomersService {
@@ -31,14 +33,17 @@ export class CustomersService {
     search = '',
     limit,
     skip,
-    active,
+    active_credits,
   }: {
     search: string;
     limit: number;
     skip: number;
-    active?: boolean;
+    active_credits?: boolean;
   }) {
     const filter = search.length > 0 ? { $text: { $search: search } } : {};
+
+    if (active_credits) filter['active_credits'] = { $gt: 0 };
+
     const findQuery = this.customerModel.find(filter);
 
     if (limit && limit > 0) findQuery.limit(limit);
@@ -62,7 +67,7 @@ export class CustomersService {
   }
 
   async findOne(id: string) {
-    const customer = await this.customerModel.findById(id).lean();
+    const customer = await this.customerModel.findById(id);
 
     if (!customer) {
       throw new HttpException(
@@ -72,6 +77,101 @@ export class CustomersService {
     }
 
     return customer;
+  }
+
+  async getPaymentInfo(id: string) {
+    const [findError, [customer]] = await asyncHandler(
+      this.customerModel.aggregate<
+        CustomerDocument & { sales_data: SaleDocument[] }
+      >([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(id) },
+        },
+        {
+          $lookup: {
+            from: 'sales',
+            let: {
+              sales: '$sales',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $in: [
+                      {
+                        $toString: '$_id',
+                      },
+                      '$$sales',
+                    ],
+                  },
+                  payment_type: 'credit',
+                  status: { $ne: 'paid' },
+                },
+              },
+              {
+                $project: {
+                  credit_start_date: '$credit_start_date',
+                  credit_end_date: '$credit_end_date',
+                  total_amount: '$total_amount',
+                  paid_amount: '$paid_amount',
+                  installment: '$installment',
+                  pending_amount: '$pending_amount',
+                  item_count: { $size: '$items' },
+                  status: '$status',
+                  interest_pending: '$interest_pending',
+                },
+              },
+            ],
+            as: 'sales_data',
+          },
+        },
+        {
+          $project: {
+            fullname: '$fullname',
+            phone: '$phone',
+            sales_data: '$sales_data',
+            active_credits: '$active_credits',
+          },
+        },
+      ]),
+    );
+
+    if (findError)
+      throw new HttpException(
+        {
+          message: 'Ocurrio un error al buscar al cliente en la base de datos',
+          error: findError,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+
+    if (!customer)
+      throw new HttpException(
+        {
+          message: 'El cliente solicitado no existe o fue eliminado',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+
+    // calculate payment amounts
+    let totalPendingPayment = 0;
+    let expectedPaymentAmount = 0;
+    let hasOverduePayments = false;
+
+    for (const sale of customer.sales_data) {
+      totalPendingPayment += sale.pending_amount;
+      expectedPaymentAmount += sale.installment;
+      if (sale.status === 'over_due') hasOverduePayments = true;
+    }
+
+    return {
+      customerData: customer,
+      paymentData: {
+        totalPendingPayment,
+        expectedPaymentAmount,
+        hasOverduePayments,
+      },
+    };
   }
 
   async update(id: string, updateCustomerDto: UpdateCustomerDto) {

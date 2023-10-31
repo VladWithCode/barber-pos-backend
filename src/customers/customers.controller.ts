@@ -31,8 +31,16 @@ export class CustomersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRoles.ADMIN, UserRoles.USER)
   @Get()
-  findAll(@Query('search') search: string, @Query('active') active: boolean) {
-    return this.customersService.find({ search, active, limit: 0, skip: 0 });
+  findAll(
+    @Query('search') search: string,
+    @Query('active_credits') active_credits: boolean,
+  ) {
+    return this.customersService.find({
+      search,
+      active_credits,
+      limit: 0,
+      skip: 0,
+    });
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -40,6 +48,11 @@ export class CustomersController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.customersService.findOne(id);
+  }
+
+  @Get(':id/get-payment-info')
+  getPaymentInfo(@Param('id') id: string) {
+    return this.customersService.getPaymentInfo(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
