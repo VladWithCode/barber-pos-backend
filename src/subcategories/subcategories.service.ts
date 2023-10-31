@@ -5,15 +5,35 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Subcategory } from './entities/subcategory.entity';
 import type { Model } from 'mongoose';
 import { asyncHandler } from 'src/utils/helpers';
+import { CategoriesService } from 'src/categories/categories.service';
 
 @Injectable()
 export class SubcategoriesService {
   constructor(
     @InjectModel(Subcategory.name)
     private readonly subcategoryModel: Model<Subcategory>,
+    private readonly categoryService: CategoriesService,
   ) {}
 
   async create(createSubcategoryDto: CreateSubcategoryDto) {
+    const [findError, { category }] = await asyncHandler(
+      this.categoryService.findOne(createSubcategoryDto.category),
+    );
+
+    if (findError)
+      throw new HttpException(
+        { message: 'Error al buscar la categoria la base de datos' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+
+    if (!category)
+      throw new HttpException(
+        {
+          message: 'La categoria seleccionada no existe o fue eliminada',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+
     const subcategory = new this.subcategoryModel(createSubcategoryDto);
 
     const [saveError, savedSubcategory] = await asyncHandler(
@@ -29,9 +49,17 @@ export class SubcategoriesService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
 
+    category.set('subcategories', [
+      ...category.subcategories,
+      savedSubcategory._id,
+    ]);
+
+    const [saveCtgError] = await asyncHandler(category.save());
+
     return {
       message: 'Subcategoria guardada con exito',
       id: savedSubcategory._id,
+      saveCtgError,
     };
   }
 
