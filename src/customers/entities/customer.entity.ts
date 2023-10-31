@@ -1,10 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
-export type SocialMedia = {
-  type: 'Facebook' | 'Twitter' | 'Instagram' | 'TikTok';
-  username: string;
-};
+export type SocialMedia = 'Facebook' | 'Twitter' | 'Instagram' | 'TikTok';
 
 @Schema()
 export class Customer {
@@ -14,7 +11,10 @@ export class Customer {
   @Prop({ required: true, unique: true })
   phone: string;
 
-  @Prop({ type: String, enum: ['facebook', 'twitter', 'instagram', 'tiktok'] })
+  @Prop({
+    type: String,
+    enum: ['facebook', 'twitter', 'instagram', 'tiktok', ''],
+  })
   social_media: SocialMedia;
 
   @Prop()
@@ -28,6 +28,15 @@ export class Customer {
 
   @Prop()
   active: string;
+
+  @Prop({ default: 0 })
+  active_credits: number;
+
+  @Prop({ default: 0 })
+  pending_payments_amount: number;
+
+  @Prop()
+  sales: string[];
 }
 
 export type CustomerDocument = HydratedDocument<Customer>;
