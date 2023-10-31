@@ -49,7 +49,7 @@ export class CategoriesService {
 
   async findOne(id: string) {
     const [findError, category] = await asyncHandler(
-      this.categoryModel.findById(id).lean(),
+      this.categoryModel.findById(id),
     );
 
     if (findError)
