@@ -26,16 +26,40 @@ export class Customer {
   @Prop()
   address: string;
 
-  @Prop()
-  active: string;
+  @Prop({ default: 0 })
+  income_total: number;
 
   @Prop({ default: 0 })
-  active_credits: number;
+  income_credit_purchases: number;
 
   @Prop({ default: 0 })
-  pending_payments_amount: number;
+  income_cash_purchases: number;
+
+  @Prop({ default: 0 })
+  credit_purchases_count: number;
+
+  @Prop({ default: 0 })
+  cash_purchases_count: number;
+
+  @Prop({ default: 0 })
+  pending_payment_amount: number;
+
+  @Prop({ default: 0 })
+  active_credit_purchases_count: number;
+
+  @Prop({ default: 500 })
+  credit_score: number;
+
+  @Prop({ default: false })
+  has_overdue_credits: boolean;
+
+  @Prop({ default: 0 })
+  accumulated_interest: number;
 
   @Prop()
+  requires_contact: boolean;
+
+  @Prop({ type: [String], default: [] })
   sales: string[];
 }
 
