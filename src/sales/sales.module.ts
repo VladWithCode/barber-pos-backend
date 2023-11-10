@@ -5,12 +5,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Sale, SaleSchema } from './entities/sale.entity';
 import { ProductsModule } from 'src/products/products.module';
 import { CustomersModule } from 'src/customers/customers.module';
+import { WhatsappApiModule } from 'src/whatsapp-api/whatsapp-api.module';
 
 @Module({
   imports: [
     forwardRef(() => ProductsModule),
     CustomersModule,
     MongooseModule.forFeature([{ name: Sale.name, schema: SaleSchema }]),
+    WhatsappApiModule,
   ],
   controllers: [SalesController],
   providers: [SalesService],

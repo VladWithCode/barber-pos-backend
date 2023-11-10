@@ -14,6 +14,7 @@ import { asyncHandler, isValidId, numberToSafeAmount } from 'src/utils/helpers';
 import { CustomerDocument } from 'src/customers/entities/customer.entity';
 import { CustomersService } from 'src/customers/customers.service';
 import { SavePaymentDto } from './dto/save-payment.dto';
+import { WhatsappApiService } from 'src/whatsapp-api/whatsapp-api.service';
 
 @Injectable()
 export class SalesService {
@@ -21,6 +22,7 @@ export class SalesService {
     @InjectModel(Sale.name) private readonly saleModel: Model<Sale>,
     private readonly productService: ProductsService,
     private readonly customerService: CustomersService,
+    private readonly whatsappService: WhatsappApiService,
   ) {}
 
   async create(createSaleDto: CreateSaleDto) {
@@ -69,6 +71,7 @@ export class SalesService {
       },
     });
 
+    const notificationItems: (SaleItem & { product_name: string })[] = [];
     const saleItems: SaleItem[] = products.map((product) => {
       const dtoItem = hashedItems[product._id.toString()];
 
@@ -87,6 +90,8 @@ export class SalesService {
       };
 
       total += resultItem.total_price;
+
+      notificationItems.push({ ...resultItem, product_name: product.name });
 
       return resultItem;
     });
@@ -130,21 +135,36 @@ export class SalesService {
       );
 
       sale.set(creditFields);
-      customer.active_credits++;
-      customer.pending_payments_amount += sale.pending_amount;
+      customer.active_credit_purchases_count++;
+      customer.pending_payment_amount += sale.pending_amount;
     }
 
     customer.sales.push(saleId.toString());
 
-    const [saveSaleResult, updateProductsResult, updateCustomerResult] =
-      await Promise.allSettled([
-        sale.save(),
-        this.productService.updateProductsOnSale({
-          soldItems: saleItems,
-          isCashSale: createSaleDto.payment_type === 'cash',
-        }),
-        customer.save(),
-      ]);
+    const [
+      saveSaleResult,
+      updateProductsResult,
+      updateCustomerResult,
+      notificationResult,
+    ] = await Promise.allSettled([
+      sale.save(),
+      this.productService.updateProductsOnSale({
+        soldItems: saleItems,
+        isCashSale: createSaleDto.payment_type === 'cash',
+      }),
+      customer.save(),
+      this.whatsappService.sendPurchaseNotification(
+        /* customer.phone */ '6183188452',
+        {
+          items: notificationItems,
+          deposit: sale.deposit,
+          installment: sale.installment,
+          next_payment_date: sale.next_payment_date,
+          pending_amount: sale.pending_amount,
+          total_amount: sale.total_amount,
+        },
+      ),
+    ]);
 
     if (saveSaleResult.status === 'rejected') {
       throw new HttpException(
@@ -166,6 +186,10 @@ export class SalesService {
 
     if (updateCustomerResult.status === 'rejected') {
       createSaleResult['updateCustomerError'] = updateCustomerResult.reason;
+    }
+
+    if (notificationResult.status === 'rejected') {
+      createSaleResult['notificationError'] = notificationResult.reason;
     }
 
     return createSaleResult;
