@@ -6,11 +6,14 @@ export class StockEntry {
   @Prop()
   _id: Types.ObjectId;
 
+  @Prop()
+  order_id?: string;
+
   @Prop({ enum: ['sale', 'supply'] })
   use: ProductUse;
 
   @Prop({ required: true })
-  buy_price: number;
+  cost: number;
 
   @Prop({ default: 0 })
   units_available: number;
@@ -69,9 +72,6 @@ export class Product {
 
   @Prop({ default: true })
   enabled: boolean;
-
-  @Prop({ default: 0 })
-  total_utility: number;
 
   @Prop()
   default_sale_stock_id: string;

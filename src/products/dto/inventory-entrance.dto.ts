@@ -4,7 +4,7 @@ export class EntryProductDto {
   _id: string;
   sale_units: number;
   supply_units: number;
-  buy_price?: number;
+  cost?: number;
   sell_price_cash?: number;
   sell_price_credit?: number;
 }

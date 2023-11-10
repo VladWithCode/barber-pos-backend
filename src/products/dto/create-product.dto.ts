@@ -9,6 +9,9 @@ import {
 } from 'class-validator';
 
 export class CreateProductDto {
+  @IsOptional()
+  _id?: string;
+
   @IsString()
   @MinLength(1)
   name: string;
@@ -25,7 +28,7 @@ export class CreateProductDto {
   category?: string;
 
   @IsNumber()
-  buy_price: number;
+  cost: number;
 
   @IsNumber()
   sell_price_cash: number;
