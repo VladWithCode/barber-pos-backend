@@ -12,6 +12,10 @@ import { SalesModule } from './sales/sales.module';
 import { CustomersModule } from './customers/customers.module';
 import { CategoriesModule } from './categories/categories.module';
 import { SubcategoriesModule } from './subcategories/subcategories.module';
+import { OrdersModule } from './orders/orders.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { WhatsappApiModule } from './whatsapp-api/whatsapp-api.module';
+import { CreditsModule } from './credits/credits.module';
 
 @Module({
   imports: [
@@ -29,6 +33,10 @@ import { SubcategoriesModule } from './subcategories/subcategories.module';
     CustomersModule,
     CategoriesModule,
     SubcategoriesModule,
+    OrdersModule,
+    NotificationsModule,
+    WhatsappApiModule,
+    CreditsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
