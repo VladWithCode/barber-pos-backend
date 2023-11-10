@@ -21,10 +21,27 @@ export function numberToSafeAmount(n: number): number {
   return safeN;
 }
 
+export function numberToCurrency(n: number) {
+  const withDecs = n / 100;
+  const [int, decs] = withDecs.toFixed(2).split('.');
+
+  return `$${(+int).toLocaleString()}.${decs || '00'}`;
+}
+
 export function isValidId(s: string): boolean {
   let testStr = '';
   if (s.length === 12) testStr = new Types.ObjectId(s).toString();
   else return isValidObjectId(s);
 
   return testStr === s;
+}
+
+const formatter = Intl.DateTimeFormat('es-MX', {
+  year: 'numeric',
+  day: 'numeric',
+  month: 'long',
+});
+
+export function dateToLongDate(d: Date) {
+  return formatter.format(d);
 }
