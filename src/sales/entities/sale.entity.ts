@@ -6,22 +6,23 @@ export const PaymentTypes = {
   CONTADO: 'cash',
   CREDITO: 'credit',
 } as const;
-export type TPaymentType = (typeof PaymentTypes)[keyof typeof PaymentTypes];
 
 export const PaymentMethods = {
   EFECTIVO: 'cash',
   TARJETA: 'card',
   TRANSFERENCIA: 'transfer',
 } as const;
-export type TPaymentMethod =
-  (typeof PaymentMethods)[keyof typeof PaymentMethods];
+
+export const PaymentStatuses = {
+  PAGADO: 'paid',
+  PENDING: 'pending',
+} as const;
 
 export const SaleStatuses = {
   PAGADO: 'paid',
-  PENDIENTE: 'pending_payment',
-  VENCIDO: 'over_due',
+  PENDIENTE: 'pending',
+  VENCIDO: 'overdue',
 } as const;
-export type TSaleStatus = (typeof SaleStatuses)[keyof typeof SaleStatuses];
 
 @Schema()
 export class SaleItem {
@@ -40,6 +41,7 @@ export class SaleItem {
   @Prop()
   stock_entry_id: string;
 }
+
 const SaleItemSchema = SchemaFactory.createForClass(SaleItem);
 
 @Schema()
@@ -50,18 +52,24 @@ export class Payment {
   @Prop()
   date: Date;
 
-  @Prop({ enum: ['cash', 'card', 'transfer'] })
+  @Prop({ enum: Object.values(PaymentMethods) })
   method: TPaymentMethod;
 
   @Prop()
   scheduled_date?: Date;
+
+  @Prop()
+  scheduled_amount?: number;
+
+  @Prop({ enum: Object.values(PaymentStatuses) })
+  status: PaymentStatus;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
   received_by: string;
 }
 const PaymentSchema = SchemaFactory.createForClass(Payment);
 
-@Schema()
+@Schema({ timestamps: true })
 export class Sale {
   @Prop({ type: [SaleItemSchema] })
   items: SaleItem[];
@@ -77,7 +85,7 @@ export class Sale {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   seller: string;
 
-  @Prop({ enum: ['cash', 'credit'] })
+  @Prop({ enum: Object.values(PaymentTypes) })
   payment_type: TPaymentType;
 
   @Prop()
@@ -119,8 +127,11 @@ export class Sale {
   @Prop()
   credit_end_date: Date;
 
-  @Prop({ enum: ['paid', 'pending_payment', 'over_due'] })
+  @Prop({ enum: Object.values(SaleStatuses) })
   status: TSaleStatus;
+
+  @Prop({ default: 0 })
+  overdue_by_fortnight: number;
 
   @Prop({ default: 0 })
   total_interest: number;
@@ -135,3 +146,10 @@ export class Sale {
 export const SaleSchema = SchemaFactory.createForClass(Sale);
 
 export type SaleDocument = HydratedDocument<Sale>;
+
+export type TPaymentType = (typeof PaymentTypes)[keyof typeof PaymentTypes];
+export type TPaymentMethod =
+  (typeof PaymentMethods)[keyof typeof PaymentMethods];
+export type PaymentStatus =
+  (typeof PaymentStatuses)[keyof typeof PaymentStatuses];
+export type TSaleStatus = (typeof SaleStatuses)[keyof typeof SaleStatuses];
