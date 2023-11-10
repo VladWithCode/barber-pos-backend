@@ -2,10 +2,15 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model, MongooseError } from 'mongoose';
+import mongoose, { FilterQuery, Model, MongooseError } from 'mongoose';
 import { Customer, CustomerDocument } from './entities/customer.entity';
 import { asyncHandler } from 'src/utils/helpers';
-import { SaleDocument } from 'src/sales/entities/sale.entity';
+import {
+  Sale,
+  SaleDocument,
+  SaleStatuses,
+} from 'src/sales/entities/sale.entity';
+import { FindWithQueryOptions, FindWithQueryResult } from './types';
 
 @Injectable()
 export class CustomersService {
@@ -77,6 +82,54 @@ export class CustomersService {
     }
 
     return customer;
+  }
+
+  async findWithQuery(
+    query: FilterQuery<CustomerDocument>,
+    options: FindWithQueryOptions = {
+      querySalesData: false,
+      customStages: [],
+      customStageAddingStyle: 'push',
+      lookupQuery: {},
+    },
+  ): Promise<FindWithQueryResult[]> {
+    const aggregatePipeline: mongoose.PipelineStage[] = [];
+
+    if (options.querySalesData) {
+      aggregatePipeline.push(
+        {
+          $lookup: {
+            from: 'sales',
+            let: { sales: '$sales' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $in: [{ $toString: '$_id' }, '$$sales'] },
+                  ...options.lookupQuery,
+                },
+              },
+            ],
+            as: 'sales_data',
+          },
+        },
+        { $match: { $expr: { $gt: [{ $size: '$sales_data' }, 0] } } },
+      );
+    }
+
+    if (options.customStages?.length > 0) {
+      if (options.customStageAddingStyle === 'unshift') {
+        aggregatePipeline.unshift(...options.customStages);
+      } else {
+        aggregatePipeline.push(...options.customStages);
+      }
+    }
+
+    return this.customerModel.aggregate<FindWithQueryResult>([
+      {
+        $match: query,
+      },
+      ...aggregatePipeline,
+    ]);
   }
 
   async getPaymentInfo(id: string) {
@@ -161,7 +214,7 @@ export class CustomersService {
     for (const sale of customer.sales_data) {
       totalPendingPayment += sale.pending_amount;
       expectedPaymentAmount += sale.installment;
-      if (sale.status === 'over_due') hasOverduePayments = true;
+      if (sale.status === SaleStatuses.VENCIDO) hasOverduePayments = true;
     }
 
     return {
