@@ -25,13 +25,24 @@ export class ProductsService {
     private readonly imagesService: ImageService,
   ) {}
 
-  async create(createProductDto: CreateProductDto) {
+  async create(
+    createProductDto: CreateProductDto,
+    options?: { skipSave?: boolean },
+  ) {
     const registerDate = createProductDto.register_date || new Date();
     const product = this.createProductFromDTO(createProductDto, {
       withDate: registerDate,
     });
 
-    const savedProduct = await product.save();
+    if (options?.skipSave) return product;
+
+    const [saveError, savedProduct] = await asyncHandler(product.save());
+
+    if (saveError)
+      throw new HttpException(
+        { message: 'Error al guardar el producto' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
 
     return savedProduct;
   }
@@ -246,7 +257,7 @@ export class ProductsService {
 
       if (isCashSale)
         stockEntry.utility =
-          (stockEntry.utility || 0) + item.sale_price - stockEntry.buy_price;
+          (stockEntry.utility || 0) + item.sale_price - stockEntry.cost;
     });
 
     const saveResult = await this.productModel.bulkSave(products);
@@ -303,7 +314,9 @@ export class ProductsService {
           updateOne: {
             filter: { _id: product._id },
             update: {
-              stocks: product.stocks,
+              $set: {
+                stocks: product.stocks,
+              },
             },
           },
         });
@@ -405,7 +418,7 @@ export class ProductsService {
     const newStockEntries: StockEntry[] = [
       {
         _id: new mongo.ObjectId(),
-        buy_price: dto.buy_price || defaultSaleStock.buy_price,
+        cost: dto.cost || defaultSaleStock.cost,
         use: ProductUses.VENTA,
         units_available: dto.sale_units,
         units_sold: 0,
@@ -413,7 +426,7 @@ export class ProductsService {
       },
       {
         _id: new mongo.ObjectId(),
-        buy_price: dto.buy_price || defaultSupplyStock.buy_price,
+        cost: dto.cost || defaultSupplyStock.cost,
         use: ProductUses.INSUMO,
         units_available: dto.supply_units,
         units_sold: 0,
