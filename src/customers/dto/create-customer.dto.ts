@@ -10,4 +10,12 @@ export class CreateCustomerDto {
   social_media_name?: string;
 
   dob?: Date;
+
+  address?: string;
+
+  reference?: {
+    fullname: string;
+
+    phone: string;
+  };
 }

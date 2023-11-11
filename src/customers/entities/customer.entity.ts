@@ -1,5 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import {
+  CustomerReferenceSchema,
+  CustomerReference,
+} from './customer-reference.entity';
 
 export type SocialMedia = 'Facebook' | 'Twitter' | 'Instagram' | 'TikTok';
 
@@ -25,6 +29,9 @@ export class Customer {
 
   @Prop()
   address: string;
+
+  @Prop({ type: CustomerReferenceSchema })
+  reference: CustomerReference;
 
   @Prop({ default: 0 })
   income_total: number;
